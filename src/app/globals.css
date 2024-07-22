@@ -2,3 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+.icon-rectangle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background-color: transparent;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.icon-rectangle:hover {
+  background-color: rgb(68, 135, 212);
+}
+
+.icon-rectangle .chakra-icon {
+  color: black;
+}
