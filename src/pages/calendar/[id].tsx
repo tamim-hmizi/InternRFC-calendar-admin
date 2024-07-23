@@ -10,8 +10,6 @@ import { CheckIcon, ExclamationTriangleIcon } from '@heroicons/react/20/solid'
 import { EventSourceInput } from '@fullcalendar/core/index.js'
 import { useRouter } from 'next/router'
 
-
-
 interface Event {
   title: string;
   start: Date | string;
@@ -23,6 +21,7 @@ export default function Home() {
   const router= useRouter();
 const {id} = router.query;
 
+
   const [events, setEvents] = useState([
     { title: 'Une journée présentielle', id: '1' },
     { title: 'Une journée en ligne', id: '2' },
@@ -30,6 +29,7 @@ const {id} = router.query;
     { title: 'Réunion avec responsable stage', id: '4' },
     { title: 'Présentation', id: '5' },
   ])
+  
   const [allEvents, setAllEvents] = useState<Event[]>([])
   const [showModal, setShowModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -40,13 +40,22 @@ const {id} = router.query;
     end: '',
     id: 0
   })
-
+    const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  
   useEffect(() => {
     async function fetchEvents() {
       try {
         const response = await fetch(`/api/calendar?personId=${id}`);
         const data = await response.json();
-        setAllEvents(data.events);
+       if (response.ok) {
+        setAllEvents(data.allEvents.map(event => ({
+          title: event.title,
+          start: event.start,
+          end: event.end,
+        })));
+       } else {
+        console.error('Error fetching events:', data.error);
+       }
       } catch (error) {
         console.error('Error fetching events:', error);
       }
@@ -102,10 +111,25 @@ const {id} = router.query;
         console.error('Error submitting event:', error);
     }
 }
+async function sendEventToAPIManual(eventData) {
+  try {
+      const response = await fetch('/api/calendar', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(eventData),
+      });
 
-  
-  
-  
+      if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error('Error adding event: ' + errorText);
+      }
+      console.log('Event added successfully');
+  } catch (error) {
+      console.error('Error submitting event:', error);
+  }
+} 
 
   function handleDateClick(arg: { date: Date; allDay: boolean }) {
     const newEvent= {
@@ -131,18 +155,50 @@ const {id} = router.query;
     console.log('Event added:', event);
     sendEventToAPI(event);
   }
+
+  
   
 
-  function handleDeleteModal(data: { event: { id: string } }) {
-    setShowDeleteModal(true)
-    setIdToDelete(Number(data.event.id))
+  function handleDeleteModal(event) {
+    setSelectedEvent(event);
+    setShowDeleteModal(true);
   }
 
-  function handleDelete() {
-    setAllEvents(allEvents.filter(event => Number(event.id) !== Number(idToDelete)))
-    setShowDeleteModal(false)
-    setIdToDelete(null)
+
+  async function handleDelete() {
+    if (!selectedEvent) return;
+  
+    try {
+      const response = await fetch('/api/calendar', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          personId: id,
+          eventId: selectedEvent.id, // Sending the event ID for deletion
+        }),
+      });
+  
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error('Error deleting event: ' + errorText);
+      }
+  
+      // Remove event from the local state
+      setAllEvents(
+        allEvents.filter(
+          (event) => event.id !== selectedEvent.id
+        )
+      );
+      setShowDeleteModal(false);
+      setSelectedEvent(null);
+    } catch (error) {
+      console.error('Error deleting event:', error);
+    }
   }
+  
+
 
   function handleCloseModal() {
     setShowModal(false)
@@ -165,48 +221,43 @@ const {id} = router.query;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-  
-    // Ensure the start and end times are in ISO format
-    const start = newEvent.start instanceof Date ? newEvent.start.toISOString() : newEvent.start;
+    let start = newEvent.start instanceof Date ? newEvent.start.toISOString() : newEvent.start;
     let end = newEvent.end instanceof Date ? newEvent.end.toISOString() : newEvent.end;
-  
-    if (!end) {
-      console.error('End date is missing');
-      end ='not specified';
-  }
-    const formattedEvent = {
-      start: start,
-      title: newEvent.title,
-      end: end,
-    };
-  
-    // Update the local state with the new event
-    setAllEvents([...allEvents, { ...newEvent, start: formattedEvent.start }]);
-  
-    // Prepare data to send to the API
-    const dataToSend = {
-      personId: id,
-      event: formattedEvent,
-    };
-  
-    try {
-      // Wait for the API call to complete and get the result
-      const result = await sendEventToAPI(dataToSend);
-      console.log('Event successfully added:', result);
-  
-      // Close the modal and reset the form
-      setShowModal(false);
-      setNewEvent({
-        title: '',
-        start: '',
-        end: '',
-        id: 0,
-      });
-    } catch (error) {
-      console.error('Error adding event:', error);
+
+    if (!end || !start) {
+        console.error('End/start date is missing');
+        if (!end) { end = 'Not specified' }
+        if (!start) { start = 'Not specified' }
     }
-  }
-  
+
+    const formattedEvent = {
+        start: start,
+        title: newEvent.title,
+        end: end,
+    };
+
+    setAllEvents([...allEvents, { ...newEvent, start: formattedEvent.start, end: formattedEvent.end }]);
+
+
+    const dataToSend = {
+        personId: id,
+        event: formattedEvent,
+    };
+
+    try {
+        await sendEventToAPIManual(dataToSend);
+        console.log('Event successfully added');
+        setShowModal(false);
+        setNewEvent({
+            title: '',
+            start: '',
+            end: '',
+            id: 0,
+        });
+    } catch (error) {
+        console.error('Error adding event:', error);
+    }
+}
   
   return (
     <>
@@ -236,7 +287,28 @@ const {id} = router.query;
               selectMirror={true}
               dateClick={handleDateClick}
               drop={(data) => addEvent(data)}
-              eventClick={(data) => handleDeleteModal(data)}
+              eventClick={(info) => {
+                setSelectedEvent({
+                  title: info.event.title,
+                  start: info.event.start.toISOString(),
+                  end: info.event.end ? info.event.end.toISOString() : '',
+                  id: info.event.id ? parseInt(info.event.id, 10) : 0,
+                });
+                setShowDeleteModal(true);
+              }}
+              eventDrop={(info) => {
+                const updatedEvent = {
+                  ...info.event,
+                  start: info.event.start.toISOString(),
+                  end: info.event.end ? info.event.end.toISOString() : '',
+                };
+                sendEventToAPI({
+                  title: updatedEvent.title,
+                  start: updatedEvent.start,
+                  end: updatedEvent.end,
+                  id: parseInt(updatedEvent.id, 10),
+                });
+              }}
             />
           </div>
           <div id="draggable-el" className="ml-8 w-full md:w-0.09 border-2 p-2 rounded-md mt-16 lg:h-1/2 bg-violet-50">
@@ -296,6 +368,9 @@ const {id} = router.query;
                             <p className="text-sm text-gray-500">
                               Etes-vous sûr de vouloir supprimer cet événement?
                             </p>
+                            <p className="text-sm text-gray-500">
+                                <strong>{selectedEvent?.title}</strong>
+                           </p>
                           </div>
                         </div>
                       </div>
@@ -318,6 +393,7 @@ const {id} = router.query;
             </div>
           </Dialog>
         </Transition.Root>
+
         <Transition.Root show={showModal} as={Fragment}>
           <Dialog as="div" className="relative z-10" onClose={setShowModal}>
             <Transition.Child
