@@ -79,7 +79,23 @@ const {id} = router.query;
         }
       })
     }
+    const handleDragStart = () => {
+      document.body.style.cursor = 'move';
+    };
+  
+    const handleDragEnd = () => {
+      document.body.style.cursor = 'default';
+    };
+  
+    document.addEventListener('dragstart', handleDragStart);
+    document.addEventListener('dragend', handleDragEnd);
+  
+    return () => {
+      document.removeEventListener('dragstart', handleDragStart);
+      document.removeEventListener('dragend', handleDragEnd);
+    };
   }, [])
+
 
   async function sendEventToAPI(event: Event) {
     console.log('Sending event to API:', event);
@@ -176,7 +192,8 @@ async function sendEventToAPIManual(eventData) {
         },
         body: JSON.stringify({
           personId: id,
-          eventId: selectedEvent.id, // Sending the event ID for deletion
+          title: selectedEvent.title,
+          start: selectedEvent.start
         }),
       });
   
@@ -184,11 +201,9 @@ async function sendEventToAPIManual(eventData) {
         const errorText = await response.text();
         throw new Error('Error deleting event: ' + errorText);
       }
-  
-      // Remove event from the local state
       setAllEvents(
         allEvents.filter(
-          (event) => event.id !== selectedEvent.id
+          (event) => event.title !== selectedEvent.title || event.start !== selectedEvent.start
         )
       );
       setShowDeleteModal(false);
@@ -277,7 +292,8 @@ async function sendEventToAPIManual(eventData) {
               headerToolbar={{
                 start: "today prev,next", 
                 center: "title",
-                end: "dayGridMonth,timeGridWeek,timeGridDay",
+                end: "dayGridMonth",
+                //end:"dayGridMonth, timeGridWeek, timeGridDay",
               }}
               events={allEvents as EventSourceInput}
               nowIndicator={true}
@@ -309,6 +325,16 @@ async function sendEventToAPIManual(eventData) {
                   id: parseInt(updatedEvent.id, 10),
                 });
               }}
+              eventContent={(arg) => {
+                const { event } = arg;
+                return (
+                  <div className="fc-event-content">
+                    <div className="fc-event-title">
+                      {event.title}
+                    </div>
+                  </div>
+                );
+              }}
             />
           </div>
           <div id="draggable-el" className="ml-8 w-full md:w-0.09 border-2 p-2 rounded-md mt-16 lg:h-1/2 bg-violet-50">
@@ -318,6 +344,7 @@ async function sendEventToAPIManual(eventData) {
                 className="fc-event border-2 p-1 m-2 w-full rounded-md ml-auto text-center bg-white"
                 title={event.title}
                 key={event.id}
+                style={{ cursor: 'pointer' }}
               >
                 {event.title}
               </div>
