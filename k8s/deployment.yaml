@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: calendar-admin-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: InternRFC-app-calendar-admin
+  template:
+    metadata:
+      labels:
+        app: InternRFC-app-calendar-admin
+    spec:
+      containers:
+      - name: Calendar-Admin-container
+        image: 533267283761.dkr.ecr.eu-central-1.amazonaws.com/worksession-admin:latest
+        ports:
+        - containerPort: 3000

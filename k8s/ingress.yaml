@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: calendar-admin-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: internRFC.com
+    http:
+      paths:
+      - path: /calendarA
+        pathType: Prefix
+        backend:
+          service:
+            name: calendar-admin-service
+            port:
+              number: 80
