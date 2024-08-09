@@ -1,24 +1,14 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import {
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  TableContainer,
-  Box,
-  Input,
-  InputGroup,
-  InputRightElement,
-  IconButton,
-  Flex,
-} from '@chakra-ui/react';
+import { Table, Thead, Tbody, Tr,Th,Td,TableContainer,Box,Input,InputGroup,InputRightElement,IconButton,Flex} from '@chakra-ui/react';
 import { Search2Icon, ChevronLeftIcon, ChevronRightIcon, CalendarIcon } from '@chakra-ui/icons';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 
+export interface user {
+  name: string, 
+  email: string
+}
 export default function Home() {
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -45,13 +35,13 @@ export default function Home() {
     fetchData();
   }, []);
 
-  const handleSearchChange = (event) => {
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.target.value);
     setStartIndex(0);
   };
 
   const filteredData = data.filter(
-    (item) =>
+    (item: user) =>
       item.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -104,7 +94,7 @@ export default function Home() {
               </Tr>
             </Thead>
             <Tbody>
-              {displayedData.map((item) => (
+              {displayedData.map((item: user) => (
                 <Tr key={item.email}>
                   
                   <Td> {item.name}</Td>

@@ -5,7 +5,7 @@ import interactionPlugin, { Draggable, DropArg } from '@fullcalendar/interaction
 import timeGridPlugin from '@fullcalendar/timegrid'
 import { Fragment, useEffect, useState } from 'react'
 
-import { Dialog, Transition } from '@headlessui/react'
+import { Dialog, DialogTitle,DialogPanel, Transition } from '@headlessui/react'
 import { CheckIcon, ExclamationTriangleIcon } from '@heroicons/react/20/solid'
 import { EventSourceInput } from '@fullcalendar/core/index.js'
 import { useRouter } from 'next/router'
@@ -15,6 +15,15 @@ interface Event {
   start: Date | string;
   end: Date | string;
   id: number;
+}
+
+interface EventData {
+  personId: string | string[] | undefined;
+  event: {
+    start: string;
+    title: string;
+    end: string;
+  };
 }
 
 export default function Home() {
@@ -48,7 +57,7 @@ const {id} = router.query;
         const response = await fetch(`/api/calendar?personId=${id}`);
         const data = await response.json();
        if (response.ok) {
-        setAllEvents(data.allEvents.map(event => ({
+        setAllEvents(data.allEvents.map((event: Event )=> ({
           title: event.title,
           start: event.start,
           end: event.end,
@@ -127,7 +136,7 @@ const {id} = router.query;
         console.error('Error submitting event:', error);
     }
 }
-async function sendEventToAPIManual(eventData) {
+async function sendEventToAPIManual(eventData: EventData) {
   try {
       const response = await fetch('/api/calendar', {
           method: 'POST',
@@ -151,6 +160,7 @@ async function sendEventToAPIManual(eventData) {
     const newEvent= {
       title:'',
       start: arg.date,
+      end: arg.date,
       id: new Date().getTime(),
     };
     setNewEvent(newEvent);
@@ -175,7 +185,7 @@ async function sendEventToAPIManual(eventData) {
   
   
 
-  function handleDeleteModal(event) {
+  function handleDeleteModal(event: Event) {
     setSelectedEvent(event);
     setShowDeleteModal(true);
   }
@@ -306,7 +316,7 @@ async function sendEventToAPIManual(eventData) {
               eventClick={(info) => {
                 setSelectedEvent({
                   title: info.event.title,
-                  start: info.event.start.toISOString(),
+                  start: info.event.start? info.event.start.toISOString():'',
                   end: info.event.end ? info.event.end.toISOString() : '',
                   id: info.event.id ? parseInt(info.event.id, 10) : 0,
                 });
@@ -315,8 +325,10 @@ async function sendEventToAPIManual(eventData) {
               eventDrop={(info) => {
                 const updatedEvent = {
                   ...info.event,
-                  start: info.event.start.toISOString(),
+                  start: info.event.start? info.event.start.toISOString():'',
                   end: info.event.end ? info.event.end.toISOString() : '',
+                  title: info.event.title,
+                  id: info.event.id
                 };
                 sendEventToAPI({
                   title: updatedEvent.title,
@@ -378,7 +390,7 @@ async function sendEventToAPIManual(eventData) {
                   leaveFrom="opacity-100 translate-y-0 sm:scale-100"
                   leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                 >
-                  <Dialog.Panel className="relative transform overflow-hidden rounded-lg
+                  <DialogPanel className="relative transform overflow-hidden rounded-lg
                    bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg"
                   >
                     <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
@@ -388,9 +400,9 @@ async function sendEventToAPIManual(eventData) {
                           <ExclamationTriangleIcon className="h-6 w-6 text-red-600" aria-hidden="true" />
                         </div>
                         <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-                          <Dialog.Title as="h3" className="text-base font-semibold leading-6 text-gray-900">
-                            Suppression d'un événement
-                          </Dialog.Title>
+                          <DialogTitle as="h3" className="text-base font-semibold leading-6 text-gray-900">
+                            Suppression d&rsquo;un événement
+                          </DialogTitle>
                           <div className="mt-2">
                             <p className="text-sm text-gray-500">
                               Etes-vous sûr de vouloir supprimer cet événement?
@@ -414,7 +426,7 @@ async function sendEventToAPIManual(eventData) {
                         Annuler
                       </button>
                     </div>
-                  </Dialog.Panel>
+                  </DialogPanel>
                 </Transition.Child>
               </div>
             </div>
@@ -446,15 +458,15 @@ async function sendEventToAPIManual(eventData) {
                   leaveFrom="opacity-100 translate-y-0 sm:scale-100"
                   leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                 >
-                  <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                  <DialogPanel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
                     <div>
                       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
                         <CheckIcon className="h-6 w-6 text-green-600" aria-hidden="true" />
                       </div>
                       <div className="mt-3 text-center sm:mt-5">
-                        <Dialog.Title as="h3" className="text-base font-semibold leading-6 text-gray-900">
-                          L'ajout d'un événement
-                        </Dialog.Title>
+                        <DialogTitle as="h3" className="text-base font-semibold leading-6 text-gray-900">
+                          L&rsquo;ajout d&rsquo;un événement
+                        </DialogTitle>
                         <form action="submit" onSubmit={handleSubmit}>
                           <div className="mt-2">
                             <input type="text" name="title" className="block w-full rounded-md border-0 py-1.5 text-gray-900 
@@ -484,7 +496,7 @@ async function sendEventToAPIManual(eventData) {
                         </form>
                       </div>
                     </div>
-                  </Dialog.Panel>
+                  </DialogPanel>
                 </Transition.Child>
               </div>
             </div>
