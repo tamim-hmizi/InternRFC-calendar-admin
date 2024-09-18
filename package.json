@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.614.0",
+    "@aws-sdk/client-dynamodb": "^3.651.1",
     "@aws-sdk/lib-dynamodb": "^3.614.0",
     "@aws-sdk/util-dynamodb": "^3.614.0",
     "@chakra-ui/icons": "^2.1.1",
@@ -22,9 +22,9 @@
     "@headlessui/react": "^2.1.2",
     "@heroicons/react": "^2.1.4",
     "aws-sdk": "^2.1659.0",
-    "axios": "^1.7.2",
+    "axios": "^1.7.4",
     "dotenv": "^16.4.5",
-    "next": "14.2.4",
+    "next": "14.2.10",
     "react": "^18",
     "react-dom": "^18"
   },
